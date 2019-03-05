@@ -92,14 +92,16 @@ let db;
 
 		let p;
 
+		var start = new Date();
+
 		//Limpiar tachados y balotas de sorteo anterior
 		p = await limpiaJuego();
 
 		//Eleccion figura
-		p = await agregadFigura(32, 1);
+		p = await agregadFigura(33, 1);
 
 		//venta modulo o lote
-		p = await agregarLote(20);
+		p = await agregarLote(30000);
 
 		//Nueva balota
 		var balota_juegoObj;
@@ -127,7 +129,8 @@ let db;
 
 		}
 		console.log("termino de sacar todas las balotas");
-
+		var end = new Date() - start
+		console.info('Execution time: %d seg', (end/60000))
 
 	} catch (err) {
 		console.log(err.stack);
@@ -373,15 +376,15 @@ async function buscaGanadores(sorteo) {
 
         await cursor.forEach(function(doc) {
             if(doc){
-                console.log("doc ganador", doc);
+                //console.log("doc ganador", doc);
                 let idFigura = doc._id.idFigura;
-                console.log("ganador",doc);
+                //console.log("ganador",doc);
                 limpiaFiguraGananada(idFigura);
                 ganadores.push(doc);
             }
 
         });
-        console.log("ganadores array", ganadores);
+        //console.log("ganadores array", ganadores);
         if(ganadores.length > 0){
             db.collection('ganadores').insertMany(ganadores);
 
@@ -451,7 +454,7 @@ async function buscaGanadores(sorteo) {
  * @param idFigura
  */
 async function limpiaFiguraGananada(idFigura) {
-	console.log('limpia figura: ' + idFigura);
+	//console.log('limpia figura: ' + idFigura);
 	// limpia tachados con esa figura
 	await db.collection('tachados').deleteMany({
 		idFigura: idFigura
@@ -482,7 +485,7 @@ async function buscaPunteros(ordenactual, sorteo) {
 
         await cursor.forEach(function(doc) {
             if(doc){
-                console.log("doc punteros", doc);
+          //      console.log("doc punteros", doc);
                 let idFigura = doc._id.idFigura;
                 console.log("punteros",doc);
 
@@ -490,7 +493,7 @@ async function buscaPunteros(ordenactual, sorteo) {
             }
 
         });
-        console.log("punteros array", punteros);
+        //console.log("punteros array", punteros);
         if(punteros.length > 0){
             //db.collection('punteros').insertMany(punteros);
 

@@ -1,0 +1,16 @@
+{
+  "name": "nodejsmongodb-probe",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app1.js",
+  "dependencies": {
+    "express": "^4.16.4",
+    "mongodb": "^3.1.13"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC"
+}
