@@ -81,7 +81,7 @@ const dbName = 'bingo';
 
 let db;
 
-(async function() {
+(async function () {
 	const client = new MongoClient(url);
 
 	try {
@@ -92,47 +92,60 @@ let db;
 
 		let p;
 
-		var start = new Date();
+		let start = new Date();
 
 		//Limpiar tachados y balotas de sorteo anterior
 		p = await limpiaJuego();
 
 		//Eleccion figura
-		p = await agregadFigura(33, 1);
+		p = await agregarFigura(32, 1);
 
-		//venta modulo o lote
+		//venta modulo o lote de cartones
 		p = await agregarLote(30000);
 
 		//Nueva balota
-		var balota_juegoObj;
-		var balotasAr = [];
-		var posNewBalota;
+		let balota_juegoObj;
+		let balotasAr = [];
+		let posNewBalota;
 
 		//arreglo
 		for (let i = 0; i < 75; i++) {
-			balotasAr[i] = i+1;
+			balotasAr[i] = i + 1;
 		}
 
 		//Siguiente balota
+
+		console.log("***inicio sorteo !");
 		for (let i = 0; i < 75; i++) {
 
+			//posicion aleatoria
 			posNewBalota = parseInt(Math.random() * (balotasAr.length - 1));
+
+			//balota segun posicion anterior
 			let balota = balotasAr[posNewBalota];
 
-			//console.log("posNewBalota, balota",posNewBalota, balota);
+			console.log("***balota: ", balota);
+
+			//siguiente balota
 			balota_juegoObj = await siguienteBalota(1, i, balota);
-			balotasAr.splice(posNewBalota,1);
-			//console.log("balotasAr.length,balotasAr",balotasAr.length,balotasAr);
+
+			//elimino balota actual
+			balotasAr.splice(posNewBalota, 1);
+
+			//console.log("***balotasAr.length,balotasAr: ", balotasAr.length, balotasAr);
 			if (balota_juegoObj.ganadores != null) {
-				break;
-			}
+                break;
+            }
 
 		}
-		console.log("termino de sacar todas las balotas");
-		var end = new Date() - start
-		console.info('Execution time: %d seg', (end/60000))
+
+		console.log("***terminó de sacar todas las balotas !");
+
+		let end = new Date() - start;
+		console.info('***Execution time: %d min', (end / 60000))
 
 	} catch (err) {
+
 		console.log(err.stack);
 	}
 
@@ -141,11 +154,10 @@ let db;
 })();
 
 
-
 /**
- *	Funcion usada para limpiar los datos del calculo de un gandor
+ *    Funcion usada para limpiar los datos del calculo de un gandor
  **/
-async function limpiaJuego(){
+async function limpiaJuego() {
 	let r;
 	r = await db.collection('balota_sorteo').deleteMany({});
 	r = await db.collection('figura_juego').deleteMany({});
@@ -155,28 +167,28 @@ async function limpiaJuego(){
 	r = await db.collection('tachados').deleteMany({});
 	r = await db.collection('vendidos').deleteMany({});
 	/*r = await db.collection('figura_juego').updateMany({}, {
-		$set: {
-			ganado: false
-		}
-	});*/
+        $set: {
+            ganado: false
+        }
+    });*/
 }
 
 /**
  agrega una figura que va a jugar en el sorteo
- @param figuraId {integer} id de la figura que sera ingresada
- @param premioId {integer} id del premio al que pertenece la figura
+ @param figuraId {number} id de la figura que sera ingresada
+ @param premioId {number} id del premio al que pertenece la figura
  Nota: se asume que las figuras no se solapan y los premios no repiten figura
  **/
-async function agregadFigura(figuraId, premioId) {
+async function agregarFigura(figuraId, premioId) {
 
-	var figuras = await db.collection('figuras').find({
+	let figuras = await db.collection('figuras').find({
 		nm_pk: figuraId
 	}).forEach(async function (figura) {
-			figura.premioId = premioId;
-			figura.ganado = false;
-			//console.log(figura);
-			let u = await db.collection('figura_juego').insertOne(figura);
-		});
+		figura.premioId = premioId;
+		figura.ganado = false;
+		//console.log(figura);
+		let u = await db.collection('figura_juego').insertOne(figura);
+	});
 
 }
 
@@ -207,13 +219,12 @@ async function agregarLote(cantidad) {
  **/
 async function siguienteBalota(sorteo, order, numBalota) {
 
+	//let sorteo = 1;
+	//let order = 1;
+	//let numBalota = 1;
+	let nuevaBalotaObjeto = await nuevaBalota(sorteo, order, numBalota);
 
-
-	//var sorteo = 1;
-	//var order = 1;
-	//var numBalota = 1;
-	var nuevaBalotaObjeto = await nuevaBalota(sorteo, order, numBalota);
-	var a = await db.collection('balota_sorteo').insertOne(nuevaBalotaObjeto);
+	let a = await db.collection('balota_sorteo').insertOne(nuevaBalotaObjeto);
 
 	return nuevaBalotaObjeto;
 }
@@ -227,9 +238,9 @@ async function siguienteBalota(sorteo, order, numBalota) {
  */
 async function nuevaBalota(sorteo, order, numBalota) {
 
-	var cantidad = 24;
-	var listaGanadores = null;
-	var objeto = {
+	// let cantidad = 24;
+	let listaGanadores;
+	let objeto = {
 		"sorteo": sorteo,
 		"order": order,
 		"balota": numBalota,
@@ -238,10 +249,10 @@ async function nuevaBalota(sorteo, order, numBalota) {
 
 	};
 
-	let u = await creaTachadosXBalota(numBalota, order, sorteo);
+	let u = await creaTachadosXBalota(numBalota, order);
 
-	if (order <= 4) {
-		//print("hay menos de 24");
+	if (order <= 24) {//TODO Buscar ganadores solo de figura seleccionada.
+		console.log("***hay menos de 24 !");
 		return objeto;
 	}
 	//print("hay mas de 24");
@@ -249,33 +260,38 @@ async function nuevaBalota(sorteo, order, numBalota) {
 
 	//print(listaGanadores);
 
-	if ((listaGanadores) && (listaGanadores.length > 0)) {
-		console.log("hay ganadores");
-		var gana = [];
+	let ganadoresListlength = listaGanadores.length;
+	if ((listaGanadores) && (ganadoresListlength > 0)) {
 
-		for (var i = 0; i < listaGanadores.length; i++) {
-			var ganad = listaGanadores[i];
+		console.log("***hay ganadores !");
+		console.log(listaGanadores);
+
+		let gana = [];
+
+		for (let i = 0; i < ganadoresListlength; i++) {
+			let ganad = listaGanadores[i];
 			//print(ganad);
 			//print(ganad._id);
 			//print(ganad._id.tabla);
 			gana.push(ganad._id.tabla);
-
 		}
+
 		objeto.ganadores = gana;
 
 		return objeto;
 	}
 
 	//print("no hay ganadores");
-	var listaPunteros = await buscaPunteros(order, sorteo);
+	let listaPunteros = await buscaPunteros(order, sorteo);
 	//print(listaPunteros);
-	var tablaPuntero = null;
+	let tablaPuntero = null;
 	listaPunteros.forEach(function (puntero) {
 		//print(puntero);
 		//print(puntero._id);
 		//print(puntero._id.tabla);
 		tablaPuntero = puntero._id.tabla;
 	});
+
 	objeto.puntero = tablaPuntero;
 	//print(objeto);
 
@@ -285,15 +301,16 @@ async function nuevaBalota(sorteo, order, numBalota) {
 
 /**
  llena la tabla de tachados por la balota que esta en juego
- @param numBalota	{integer} numero de la balota
- @param orden 		{integer} orden de la balota
+ @param numBalota    {integer} numero de la balota
+ @param orden        {integer} orden de la balota
 
  **/
 async function creaTachadosXBalota(numBalota, orden) {
-	console.log('numBalota',numBalota, 'orden', orden);
+
+	console.log('numBalota', numBalota, 'orden', orden);
 	let tachados = [];
 
-	var u = await db.collection('vendidos').aggregate([{
+	let u = await db.collection('vendidos').aggregate([{
 		$match: { //busca cartones por numero
 			"numero": numBalota
 		}
@@ -304,49 +321,49 @@ async function creaTachadosXBalota(numBalota, orden) {
 				$addToSet: "$tabla"
 			}
 		}
-	}],async function(err, cursor) {
+	}], async function (err, cursor) {
 		assert.equal(err, null);
 
-		cursor.toArray(async function(err,grupos) { //por cada grupo de posiciones
+		cursor.toArray(async function (err, grupos) { //por cada grupo de posiciones
 			//console.log("grupo",grupos);
 
 			grupos.forEach(async function (grupo) {
-				var posicion = grupo._id;
-				var tablas = grupo.tablas;
+				let posicion = grupo._id;
+				let tablas = grupo.tablas;
 				//console.log("posicion", posicion, 'tablas', tablas);
-				var figura_juegos = await db.collection('figura_juego')
+				let figura_juegos = await db.collection('figura_juego')
 					.find({
 						posiciones_nm_pk: posicion,
 						ganado: false
-					}).forEach(async function(figura_juego) {
-							//console.log("figura_juego",figura_juego);
+					}).forEach(async function (figura_juego) {
+						//console.log("figura_juego",figura_juego);
 
-							tablas.forEach(async function (tabla) { //por cada tabla
-								//console.log('tabla', tabla, 'figura_juego',figura_juego);
-								//var tachados = figura_juego.tachados;
-								var casillas = figura_juego.nm_casillas;
-								var idFigura = figura_juego.nm_pk;
-								var idPremio = figura_juego.premioId;
+						tablas.forEach(async function (tabla) { //por cada tabla
+							//console.log('tabla', tabla, 'figura_juego',figura_juego);
+							//let tachados = figura_juego.tachados;
+							let casillas = figura_juego.nm_casillas;
+							let idFigura = figura_juego.nm_pk;
+							let idPremio = figura_juego.premioId;
 
-								if (idFigura) {
-									var nuevoTachado = {
-										idFigura: idFigura,
-										tabla: tabla,
-										posicion: posicion,
-										casillas: casillas,
-										idPremio: idPremio,
-										order: orden
-									};
+							if (idFigura) {
+								let nuevoTachado = {
+									idFigura: idFigura,
+									tabla: tabla,
+									posicion: posicion,
+									casillas: casillas,
+									idPremio: idPremio,
+									order: orden
+								};
 
-									//console.log("nuevoTachado", nuevoTachado);
-									//console.log("tachados",tachados);
-									//tachados.push(nuevoTachado);
-									//console.log("tachados",tachados);
-									let u = await db.collection('tachados').insertOne(nuevoTachado);
-								}
+								//console.log("nuevoTachado", nuevoTachado);
+								//console.log("tachados",tachados);
+								//tachados.push(nuevoTachado);
+								//console.log("tachados",tachados);
+								let u = await db.collection('tachados').insertOne(nuevoTachado);
+							}
 
-							});
 						});
+					});
 
 			}); //busca todas las figuras con esa posicion
 
@@ -354,10 +371,9 @@ async function creaTachadosXBalota(numBalota, orden) {
 		});
 	});
 	/*console.log("tachados",tachados.length ,tachados);
-	if(tachados.length > 0){
-		let a = await db.collection('tachados').insertMany(tachados);
-	}*/
-
+    if(tachados.length > 0){
+        let a = await db.collection('tachados').insertMany(tachados);
+    }*/
 
 
 }
@@ -368,31 +384,30 @@ async function creaTachadosXBalota(numBalota, orden) {
  * @param sorteo numero del sorteo
  **/
 async function buscaGanadores(sorteo) {
-    let ganadores = [];
+	let ganadores = [];
 
-    async function inResult(err, cursor) {
-        assert.equal(err, null);
-        //console.log("-----", cursor);
+	async function inResult(err, cursor) {
+		assert.equal(err, null);
+		//console.log("-----", cursor);
 
-        await cursor.forEach(function(doc) {
-            if(doc){
-                //console.log("doc ganador", doc);
-                let idFigura = doc._id.idFigura;
-                //console.log("ganador",doc);
-                limpiaFiguraGananada(idFigura);
-                ganadores.push(doc);
-            }
+		await cursor.forEach(function (doc) {
+			if (doc) {
+				//console.log("doc ganador", doc);
+				let idFigura = doc._id.idFigura;
+				//console.log("ganador",doc);
+				limpiaFiguraGanada(idFigura);
+				ganadores.push(doc);
+			}
 
-        });
-        //console.log("ganadores array", ganadores);
-        if(ganadores.length > 0){
-            db.collection('ganadores').insertMany(ganadores);
+		});
+		//console.log("ganadores array", ganadores);
+		if (ganadores.length > 0) {
+			db.collection('ganadores').insertMany(ganadores);
+		}
 
-        }
+	}
 
-    }
-
-    var ganadoresPromesa = await db.collection('tachados').aggregate([
+	let ganadoresPromesa = await db.collection('tachados').aggregate([
 		//{ $match: { idFigura:32 } },
 		{
 			$group: {
@@ -444,23 +459,23 @@ async function buscaGanadores(sorteo) {
 				isGanador: true
 			}
 		}
-	],inResult);
+	], inResult);
 
-    return ganadores;
+	return ganadores;
 }
 
 /**
  *
  * @param idFigura
  */
-async function limpiaFiguraGananada(idFigura) {
+async function limpiaFiguraGanada(idFigura) {
 	//console.log('limpia figura: ' + idFigura);
 	// limpia tachados con esa figura
 	await db.collection('tachados').deleteMany({
 		idFigura: idFigura
 	});
 
-	// actualiza variable ganado en figuras_juego
+	// actualiza letiable ganado en figuras_juego
 	await db.collection('figura_juego').updateMany({
 		nm_pk: idFigura
 	}, {
@@ -477,31 +492,31 @@ async function limpiaFiguraGananada(idFigura) {
  * @param sorteo numero del sorteo
  */
 async function buscaPunteros(ordenactual, sorteo) {
-	var punteros = [];
+	let punteros = [];
 
-    async function inResult(err, cursor) {
-        assert.equal(err, null);
-        //console.log("-----", cursor);
+	async function inResult(err, cursor) {
+		assert.equal(err, null);
+		//console.log("-----", cursor);
 
-        await cursor.forEach(function(doc) {
-            if(doc){
-          //      console.log("doc punteros", doc);
-                let idFigura = doc._id.idFigura;
-                console.log("punteros",doc);
+		await cursor.forEach(function (doc) {
+			if (doc) {
+				//      console.log("doc punteros", doc);
+				let idFigura = doc._id.idFigura;
+				console.log("punteros", doc);
 
-                punteros.push(doc);
-            }
+				punteros.push(doc);
+			}
 
-        });
-        //console.log("punteros array", punteros);
-        if(punteros.length > 0){
-            //db.collection('punteros').insertMany(punteros);
+		});
+		//console.log("punteros array", punteros);
+		if (punteros.length > 0) {
+			//db.collection('punteros').insertMany(punteros);
 
-        }
+		}
 
-    }
+	}
 
-	var punterosPromesa = await db.collection('tachados').aggregate([
+	let punterosPromesa = await db.collection('tachados').aggregate([
 		//{ $match: { order:5 } },
 		{
 			$match: {
@@ -554,8 +569,7 @@ async function buscaPunteros(ordenactual, sorteo) {
 		}, {
 			$limit: 1
 		}
-	],inResult);
-
+	], inResult);
 
 
 	return punteros;
