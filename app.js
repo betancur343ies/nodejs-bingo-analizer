@@ -98,18 +98,17 @@ let ganadoresTotalAr = [];
 		db = client.db(dbName);
 
 		let p;
-
 		let start = new Date();
 
 		//Total sorteos
 		let totalSorteos = 25;
 		let cantidadCartones = 1000;
 
-		let idFigura = 33;
+		let idFigura = 35;
 
 		for (let s = 0; s < totalSorteos; s++) {
 
-			console.info("Sorteo #", s);
+			console.info("\nSorteo #", s);
 
 			//Limpiar tachados y balotas de sorteo anterior
 			p = await limpiaJuego();
@@ -140,8 +139,6 @@ let ganadoresTotalAr = [];
 				//balota segun posicion anterior
 				let balota = balotasAr[posNewBalota];
 
-				console.log("* * * balota: ", balota);
-
 				//siguiente balota
 				balota_juegoObj = await siguienteBalota(1, i, balota);
 
@@ -159,20 +156,28 @@ let ganadoresTotalAr = [];
 		}
 
 		console.info("\n----------------------------------------------------");
-		let sum = 0;
-		let sumDif = 0;
+		let totalGanadores = 0;
+		let sumCuadrados = 0;
+
 		for (let s1 = 0; s1 < totalSorteos; s1++) {
 			console.info("- Total ganadores sorteo ", s1 + 1, ": ", ganadoresAr[s1]);
-			sum += ganadoresAr[s1];
+			totalGanadores += ganadoresAr[s1];
 		}
+
+		let media = totalGanadores/totalSorteos;
 
 		for (let s2 = 0; s2 < totalSorteos; s2++) {
-			sumDif += Math.pow(ganadoresAr[s2] - sum, 2);
+			sumCuadrados += Math.pow(media - ganadoresAr[s2], 2);
 		}
 
+		let varianza = sumCuadrados/totalSorteos;
+		let desviacion = Math.pow(varianza, 0.5);
+
 		console.info("\n----------------------------------------------------");
-		console.info("Figura:"+idFigura+" | Max:"+Math.max(...ganadoresAr)+
-			" | Min:"+Math.min(...ganadoresAr)+" | Media: ", sum/totalSorteos + " - Desv. Std: " + Math.pow(sumDif/sum, 0.5));
+		console.info("Sorteos: "+totalSorteos+" | Figura:"+idFigura
+			+ " | Max:"
+			+Math.max(...ganadoresAr) + " | Min:"+Math.min(...ganadoresAr)+" | Media: " +media
+			+ " - Desv. Std: " + desviacion);
 		console.info("----------------------------------------------------");
 
 		let end = new Date() - start;
@@ -185,9 +190,7 @@ let ganadoresTotalAr = [];
 
 	// Close connection
 	// client.close();
-
 })();
-
 
 /**
  *    Funcion usada para limpiar los datos del calculo de un gandor
@@ -273,7 +276,7 @@ async function siguienteBalota(sorteo, order, numBalota) {
  */
 async function nuevaBalota(sorteo, order, numBalota) {
 
-	let cantidad = 24;
+	let cantidad = 16;
 	let listaGanadores;
 	let objeto = {
 		"sorteo": sorteo,
@@ -342,7 +345,8 @@ async function nuevaBalota(sorteo, order, numBalota) {
  **/
 async function creaTachadosXBalota(numBalota, orden) {
 
-	console.log('numBalota', numBalota, 'orden', orden);
+	// console.log('numBalota', numBalota, 'orden', orden);
+
 	let tachados = [];
 
 	let u = await db.collection('vendidos').aggregate([{
