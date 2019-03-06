@@ -19,6 +19,57 @@
 	Validar si tachados corresponden con figura? Cómo: por total o por posicion?
 */
 
+/*var MongoClient = require('mongodb').MongoClient;
+var url = "mongodb://localhost:27017/";
+var config = { useNewUrlParser: true };
+var db = null;
+
+MongoClient.connect(url, config, function(err, dbo) {
+
+	if (err) throw err;
+	db = dbo;
+
+	console.log(db);
+	console.log(dbo);
+
+	console.log("Connected successfully to server!");
+
+	//Limpiar tachados y balotas de sorteo anterior
+	limpiaJuego();
+
+	//Eleccion figura
+	agregadFigura(32, 1);
+
+	//venta modulo o lote
+	agregarLote(20);
+
+	//Nueva balota
+	var balota_juegoObj;
+	var balotasAr = [];
+	var posNewBalota;
+
+	//arreglo
+	for (let i = 1; i < 75; i++) {
+		balotasAr[i] = i;
+	}
+
+	//Siguiente valota
+	for (let i = 0; i < 75; i++) {
+
+		posNewBalota = Math.random() * (balotasAr.length - 1) + 1;
+		balota_juegoObj = siguienteBalota(1, i, balotasAr[posNewBalota]);
+		delete balotasAr[posNewBalota];
+
+		if (balota_juegoObj.ganadores != null) {
+			break;
+		}
+
+	}
+
+	db.close();
+
+});*/
+
 const MongoClient = require('mongodb').MongoClient;
 const assert = require('assert');
 
@@ -35,7 +86,7 @@ let db;
 
     try {
         await client.connect();
-        console.log("Connected correctly to server");
+        console.log("* * *  Connected correctly to server");
 
         db = client.db(dbName);
 
@@ -44,13 +95,16 @@ let db;
         let start = new Date();
 
         //Limpiar tachados y balotas de sorteo anterior
-        p = await limpiaJuego();
+        // p = await limpiaJuego();
+        p = await db.eval("limpiaJuego()");
 
         //Eleccion figura
-        p = await agregadFigura(32, 1);
+        // p = await agregarFigura(32, 1);
+        p = await db.eval("agregarFigura(32, 1)");
 
         //venta modulo o lote de cartones
-        p = await agregarLote(30000);
+        // p = await agregarLote(30000);
+        p = await db.eval("agregarLote(30000)");
 
         //Nueva balota
         let balota_juegoObj;
@@ -64,7 +118,7 @@ let db;
 
         //Siguiente balota
 
-        console.log("***inicio sorteo !");
+        console.log("* * * inicio sorteo !");
         for (let i = 0; i < 75; i++) {
 
             //posicion aleatoria
@@ -73,25 +127,25 @@ let db;
             //balota segun posicion anterior
             let balota = balotasAr[posNewBalota];
 
-            console.log("***balota: ", balota);
+            console.log("* * * balota: ", balota);
 
             //siguiente balota
-            // balota_juegoObj = await siguienteBalota(1, i, balota);
+            balota_juegoObj = await siguienteBalota(1, i, balota);
 
             //elimino balota actual
             balotasAr.splice(posNewBalota, 1);
 
-            //console.log("***balotasAr.length,balotasAr: ", balotasAr.length, balotasAr);
-            /*if (balota_juegoObj.ganadores != null) {
+            //console.log("* * * balotasAr.length,balotasAr: ", balotasAr.length, balotasAr);
+            if (balota_juegoObj.ganadores != null) {
                 break;
-            }*/
+            }
 
         }
 
-        console.log("***terminó de sacar todas las balotas !");
+        console.log("* * * terminó de sacar todas las balotas !");
 
         let end = new Date() - start;
-        console.info('***Execution time: %d min', (end / 60000))
+        console.info('* * * Execution time: %d min', (end / 60000))
 
     } catch (err) {
 
@@ -106,7 +160,7 @@ let db;
 /**
  *    Funcion usada para limpiar los datos del calculo de un gandor
  **/
-async function limpiaJuego() {
+/*async function limpiaJuego() {
     let r;
     r = await db.collection('balota_sorteo').deleteMany({});
     r = await db.collection('figura_juego').deleteMany({});
@@ -119,8 +173,8 @@ async function limpiaJuego() {
         $set: {
             ganado: false
         }
-    });*/
-}
+    });
+}*/
 
 /**
  agrega una figura que va a jugar en el sorteo
@@ -128,7 +182,7 @@ async function limpiaJuego() {
  @param premioId {number} id del premio al que pertenece la figura
  Nota: se asume que las figuras no se solapan y los premios no repiten figura
  **/
-async function agregadFigura(figuraId, premioId) {
+async function agregarFigura(figuraId, premioId) {
 
     let figuras = await db.collection('figuras').find({
         nm_pk: figuraId
@@ -171,9 +225,11 @@ async function siguienteBalota(sorteo, order, numBalota) {
     //let sorteo = 1;
     //let order = 1;
     //let numBalota = 1;
-    let nuevaBalotaObjeto = await nuevaBalota(sorteo, order, numBalota);
+    //let nuevaBalotaObjeto = await nuevaBalota(sorteo, order, numBalota);
 
-    let a = await db.collection('balota_sorteo').insertOne(nuevaBalotaObjeto);
+    let nuevaBalotaObjeto = await db.eval("siguienteBalota("+sorteo+", "+order+", "+numBalota+")");
+
+    //let a = await db.collection('balota_sorteo').insertOne(nuevaBalotaObjeto);
 
     return nuevaBalotaObjeto;
 }
@@ -187,7 +243,7 @@ async function siguienteBalota(sorteo, order, numBalota) {
  */
 async function nuevaBalota(sorteo, order, numBalota) {
 
-    // let cantidad = 24;
+    let cantidad = 12;
     let listaGanadores;
     let objeto = {
         "sorteo": sorteo,
@@ -200,8 +256,8 @@ async function nuevaBalota(sorteo, order, numBalota) {
 
     let u = await creaTachadosXBalota(numBalota, order);
 
-    if (order <= 24) {//TODO Buscar ganadores solo de figura seleccionada.
-        console.log("***hay menos de 24 !");
+    if (order <= cantidad) {//TODO Buscar ganadores solo de figura seleccionada.
+        console.log("* * * hay menos de 24 !");
         return objeto;
     }
     //print("hay mas de 24");
@@ -212,7 +268,7 @@ async function nuevaBalota(sorteo, order, numBalota) {
     let ganadoresListlength = listaGanadores.length;
     if ((listaGanadores) && (ganadoresListlength > 0)) {
 
-        console.log("***hay ganadores !");
+        console.log("* * * hay ganadores !");
         console.log(listaGanadores);
 
         let gana = [];
@@ -344,7 +400,7 @@ async function buscaGanadores(sorteo) {
                 //console.log("doc ganador", doc);
                 let idFigura = doc._id.idFigura;
                 //console.log("ganador",doc);
-                limpiaFiguraGananada(idFigura);
+                limpiaFiguraGanada(idFigura);
                 ganadores.push(doc);
             }
 
@@ -417,7 +473,7 @@ async function buscaGanadores(sorteo) {
  *
  * @param idFigura
  */
-async function limpiaFiguraGananada(idFigura) {
+async function limpiaFiguraGanada(idFigura) {
     //console.log('limpia figura: ' + idFigura);
     // limpia tachados con esa figura
     await db.collection('tachados').deleteMany({
