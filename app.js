@@ -73,6 +73,8 @@ MongoClient.connect(url, config, function(err, dbo) {
 const MongoClient = require('mongodb').MongoClient;
 const assert = require('assert');
 
+let config = { useNewUrlParser: true };
+
 // Connection URL
 const url = 'mongodb://localhost:27017';
 
@@ -81,8 +83,13 @@ const dbName = 'bingo';
 
 let db;
 
+const client = new MongoClient(url, config);
+
+let ganadoresAr = [];
+let ganadoresTotalAr = [];
+
 (async function () {
-	const client = new MongoClient(url);
+
 
 	try {
 		await client.connect();
@@ -94,55 +101,82 @@ let db;
 
 		let start = new Date();
 
-		//Limpiar tachados y balotas de sorteo anterior
-		p = await limpiaJuego();
+		//Total sorteos
+		let totalSorteos = 25;
+		let cantidadCartones = 1000;
 
-		//Eleccion figura
-		p = await agregarFigura(32, 1);
+		let idFigura = 33;
 
-		//venta modulo o lote de cartones
-		p = await agregarLote(30000);
+		for (let s = 0; s < totalSorteos; s++) {
 
-		//Nueva balota
-		let balota_juegoObj;
-		let balotasAr = [];
-		let posNewBalota;
+			console.info("Sorteo #", s);
 
-		//arreglo
-		for (let i = 0; i < 75; i++) {
-			balotasAr[i] = i + 1;
+			//Limpiar tachados y balotas de sorteo anterior
+			p = await limpiaJuego();
+
+			//Eleccion figura
+			p = await agregarFigura(idFigura, 1);
+
+			//Venta modulo o lote de cartones
+			p = await agregarLote(cantidadCartones);
+
+			//Para un nueva balota
+			let balota_juegoObj;
+			let balotasAr = [];
+			let posNewBalota;
+
+			for (let i = 0; i < 75; i++) {
+				balotasAr[i] = i + 1;
+			}
+
+			//Siguiente balota
+
+			console.log("* * * inicio sorteo !");
+			for (let i = 0; i < 75; i++) {
+
+				//posicion aleatoria
+				posNewBalota = parseInt(Math.random() * (balotasAr.length - 1));
+
+				//balota segun posicion anterior
+				let balota = balotasAr[posNewBalota];
+
+				console.log("* * * balota: ", balota);
+
+				//siguiente balota
+				balota_juegoObj = await siguienteBalota(1, i, balota);
+
+				//elimino balota actual
+				balotasAr.splice(posNewBalota, 1);
+
+				//console.log("* * * balotasAr.length,balotasAr: ", balotasAr.length, balotasAr);
+				if (balota_juegoObj.ganadores != null) {
+					break;
+				}
+
+			}
+
+			console.log("\n* * * terminó de sacar todas las balotas !");
 		}
 
-		//Siguiente balota
-
-		console.log("***inicio sorteo !");
-		for (let i = 0; i < 75; i++) {
-
-			//posicion aleatoria
-			posNewBalota = parseInt(Math.random() * (balotasAr.length - 1));
-
-			//balota segun posicion anterior
-			let balota = balotasAr[posNewBalota];
-
-			console.log("***balota: ", balota);
-
-			//siguiente balota
-			balota_juegoObj = await siguienteBalota(1, i, balota);
-
-			//elimino balota actual
-			balotasAr.splice(posNewBalota, 1);
-
-			//console.log("***balotasAr.length,balotasAr: ", balotasAr.length, balotasAr);
-			if (balota_juegoObj.ganadores != null) {
-                break;
-            }
-
+		console.info("\n----------------------------------------------------");
+		let sum = 0;
+		let sumDif = 0;
+		for (let s1 = 0; s1 < totalSorteos; s1++) {
+			console.info("- Total ganadores sorteo ", s1 + 1, ": ", ganadoresAr[s1]);
+			sum += ganadoresAr[s1];
 		}
 
-		console.log("***terminó de sacar todas las balotas !");
+		for (let s2 = 0; s2 < totalSorteos; s2++) {
+			sumDif += Math.pow(ganadoresAr[s2] - sum, 2);
+		}
+
+		console.info("\n----------------------------------------------------");
+		console.info("Figura:"+idFigura+" | Max:"+Math.max(...ganadoresAr)+
+			" | Min:"+Math.min(...ganadoresAr)+" | Media: ", sum/totalSorteos + " - Desv. Std: " + Math.pow(sumDif/sum, 0.5));
+		console.info("----------------------------------------------------");
 
 		let end = new Date() - start;
-		console.info('***Execution time: %d min', (end / 60000))
+		console.info('\n* * * Execution time: %d min', (end / 60000))
 
 	} catch (err) {
 
@@ -150,7 +184,8 @@ let db;
 	}
 
 	// Close connection
-	client.close();
+	// client.close();
+
 })();
 
 
@@ -238,7 +273,7 @@ async function siguienteBalota(sorteo, order, numBalota) {
  */
 async function nuevaBalota(sorteo, order, numBalota) {
 
-	// let cantidad = 24;
+	let cantidad = 24;
 	let listaGanadores;
 	let objeto = {
 		"sorteo": sorteo,
@@ -251,8 +286,8 @@ async function nuevaBalota(sorteo, order, numBalota) {
 
 	let u = await creaTachadosXBalota(numBalota, order);
 
-	if (order <= 24) {//TODO Buscar ganadores solo de figura seleccionada.
-		console.log("***hay menos de 24 !");
+	if (order <= cantidad) {//TODO Buscar ganadores solo de figura seleccionada.
+		// console.log("* * * hay menos de 24 !");
 		return objeto;
 	}
 	//print("hay mas de 24");
@@ -263,8 +298,8 @@ async function nuevaBalota(sorteo, order, numBalota) {
 	let ganadoresListlength = listaGanadores.length;
 	if ((listaGanadores) && (ganadoresListlength > 0)) {
 
-		console.log("***hay ganadores !");
-		console.log(listaGanadores);
+		// console.log("* * * hay ganadores !\n", listaGanadores);
+		ganadoresAr.push(ganadoresListlength);
 
 		let gana = [];
 
@@ -395,7 +430,7 @@ async function buscaGanadores(sorteo) {
 				//console.log("doc ganador", doc);
 				let idFigura = doc._id.idFigura;
 				//console.log("ganador",doc);
-				limpiaFiguraGanada(idFigura);
+				let r = limpiaFiguraGanada(idFigura);
 				ganadores.push(doc);
 			}
 
@@ -470,19 +505,28 @@ async function buscaGanadores(sorteo) {
  */
 async function limpiaFiguraGanada(idFigura) {
 	//console.log('limpia figura: ' + idFigura);
+
 	// limpia tachados con esa figura
 	await db.collection('tachados').deleteMany({
 		idFigura: idFigura
 	});
 
-	// actualiza letiable ganado en figuras_juego
-	await db.collection('figura_juego').updateMany({
-		nm_pk: idFigura
-	}, {
-		$set: {
-			ganado: true
-		}
-	})
+	try {
+		// actualiza letiable ganado en figuras_juego
+		await db.collection('figura_juego').updateMany({
+			nm_pk: idFigura
+		}, {
+			$set: {
+				ganado: true
+			}
+		})
+
+		//TODO Closing pool
+		// client.close();
+
+	} catch (e) {
+		console.log(e);
+	}
 
 }
 
@@ -502,7 +546,7 @@ async function buscaPunteros(ordenactual, sorteo) {
 			if (doc) {
 				//      console.log("doc punteros", doc);
 				let idFigura = doc._id.idFigura;
-				console.log("punteros", doc);
+				// console.log("punteros", doc);
 
 				punteros.push(doc);
 			}
