@@ -101,10 +101,10 @@ let ganadoresTotalAr = [];
 		let start = new Date();
 
 		//Total sorteos
-		let totalSorteos = 25;
+		let totalSorteos = 50;
 		let cantidadCartones = 1000;
 
-		let idFigura = 35;
+		let idFigura = 42;
 
 		for (let s = 0; s < totalSorteos; s++) {
 
@@ -130,7 +130,7 @@ let ganadoresTotalAr = [];
 
 			//Siguiente balota
 
-			console.log("* * * inicio sorteo !");
+			// console.log("* * * inicio sorteo !");
 			for (let i = 0; i < 75; i++) {
 
 				//posicion aleatoria
@@ -276,7 +276,7 @@ async function siguienteBalota(sorteo, order, numBalota) {
  */
 async function nuevaBalota(sorteo, order, numBalota) {
 
-	let cantidad = 16;
+	let cantidad = 12;
 	let listaGanadores;
 	let objeto = {
 		"sorteo": sorteo,
