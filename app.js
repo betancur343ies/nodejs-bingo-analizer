@@ -16,59 +16,8 @@
 	Eleccion figura
 	Siguiente balota
 	Insertar tachado
-	Validar si tachados corresponden con figura? Cómo: por total o por posicion?
+	Validar si tachados corresponden con figura? num total o por posicion? Num total
 */
-
-/*var MongoClient = require('mongodb').MongoClient;
-var url = "mongodb://localhost:27017/";
-var config = { useNewUrlParser: true };
-var db = null;
-
-MongoClient.connect(url, config, function(err, dbo) {
-
-	if (err) throw err;
-	db = dbo;
-
-	console.log(db);
-	console.log(dbo);
-
-	console.log("Connected successfully to server!");
-
-	//Limpiar tachados y balotas de sorteo anterior
-	limpiaJuego();
-
-	//Eleccion figura
-	agregadFigura(32, 1);
-
-	//venta modulo o lote
-	agregarLote(20);
-
-	//Nueva balota
-	var balota_juegoObj;
-	var balotasAr = [];
-	var posNewBalota;
-
-	//arreglo
-	for (let i = 1; i < 75; i++) {
-		balotasAr[i] = i;
-	}
-
-	//Siguiente valota
-	for (let i = 0; i < 75; i++) {
-
-		posNewBalota = Math.random() * (balotasAr.length - 1) + 1;
-		balota_juegoObj = siguienteBalota(1, i, balotasAr[posNewBalota]);
-		delete balotasAr[posNewBalota];
-
-		if (balota_juegoObj.ganadores != null) {
-			break;
-		}
-
-	}
-
-	db.close();
-
-});*/
 
 const MongoClient = require('mongodb').MongoClient;
 const assert = require('assert');
@@ -101,10 +50,9 @@ let ganadoresTotalAr = [];
 		let start = new Date();
 
 		//Total sorteos
-		let totalSorteos = 50;
-		let cantidadCartones = 1000;
-
-		let idFigura = 42;
+		let totalSorteos = 5;
+		let cantidadCartones = 10;
+		let idFigura = 33;
 
 		for (let s = 0; s < totalSorteos; s++) {
 
@@ -122,11 +70,13 @@ let ganadoresTotalAr = [];
 			//Para un nueva balota
 			let balota_juegoObj;
 			let balotasAr = [];
+			let balotasArFinal = [];
 			let posNewBalota;
 
 			for (let i = 0; i < 75; i++) {
 				balotasAr[i] = i + 1;
 			}
+			console.info("--> balotas: " + JSON.stringify(balotasAr));
 
 			//Siguiente balota
 
@@ -138,6 +88,7 @@ let ganadoresTotalAr = [];
 
 				//balota segun posicion anterior
 				let balota = balotasAr[posNewBalota];
+				balotasArFinal.push(balota);
 
 				//siguiente balota
 				balota_juegoObj = await siguienteBalota(1, i, balota);
@@ -152,7 +103,9 @@ let ganadoresTotalAr = [];
 
 			}
 
-			console.log("\n* * * terminó de sacar todas las balotas !");
+			console.log("\n* * * terminó de sacar todas las balotas: " + JSON.stringify(balotasArFinal));
+			let parcial = new Date() - start;
+			console.info('\n* * * Time: %d min', (parcial / 60000));
 		}
 
 		console.info("\n----------------------------------------------------");
@@ -174,14 +127,14 @@ let ganadoresTotalAr = [];
 		let desviacion = Math.pow(varianza, 0.5);
 
 		console.info("\n----------------------------------------------------");
-		console.info("Sorteos: "+totalSorteos+" | Figura:"+idFigura
+																	console.info("Sorteos: "+totalSorteos+" | Figura:"+idFigura
 			+ " | Max:"
 			+Math.max(...ganadoresAr) + " | Min:"+Math.min(...ganadoresAr)+" | Media: " +media
 			+ " - Desv. Std: " + desviacion);
 		console.info("----------------------------------------------------");
 
 		let end = new Date() - start;
-		console.info('\n* * * Execution time: %d min', (end / 60000))
+		console.info('\n* * * Execution time: %d min', (end / 60000));
 
 	} catch (err) {
 
@@ -276,7 +229,7 @@ async function siguienteBalota(sorteo, order, numBalota) {
  */
 async function nuevaBalota(sorteo, order, numBalota) {
 
-	let cantidad = 12;
+	let cantidad = 24;
 	let listaGanadores;
 	let objeto = {
 		"sorteo": sorteo,
@@ -345,7 +298,7 @@ async function nuevaBalota(sorteo, order, numBalota) {
  **/
 async function creaTachadosXBalota(numBalota, orden) {
 
-	// console.log('numBalota', numBalota, 'orden', orden);
+																	//console.log('numBalota', numBalota, 'orden', orden);
 
 	let tachados = [];
 
@@ -439,7 +392,7 @@ async function buscaGanadores(sorteo) {
 			}
 
 		});
-		//console.log("ganadores array", ganadores);
+
 		if (ganadores.length > 0) {
 			db.collection('ganadores').insertMany(ganadores);
 		}
