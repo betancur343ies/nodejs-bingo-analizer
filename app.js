@@ -50,8 +50,8 @@ let ganadoresTotalAr = [];
 		let start = new Date();
 
 		//Total sorteos
-		let totalSorteos = 5;
-		let cantidadCartones = 10;
+		let totalSorteos = 20;
+		let cantidadCartones = 20000;
 		let idFigura = 33;
 
 		for (let s = 0; s < totalSorteos; s++) {
@@ -72,11 +72,11 @@ let ganadoresTotalAr = [];
 			let balotasAr = [];
 			let balotasArFinal = [];
 			let posNewBalota;
+			let flag = false;
 
 			for (let i = 0; i < 75; i++) {
 				balotasAr[i] = i + 1;
 			}
-			console.info("--> balotas: " + JSON.stringify(balotasAr));
 
 			//Siguiente balota
 
@@ -98,7 +98,11 @@ let ganadoresTotalAr = [];
 
 				//console.log("* * * balotasAr.length,balotasAr: ", balotasAr.length, balotasAr);
 				if (balota_juegoObj.ganadores != null) {
-					break;
+					flag = true;					
+				}
+
+				if (flag) {
+					break;					
 				}
 
 			}
@@ -127,10 +131,13 @@ let ganadoresTotalAr = [];
 		let desviacion = Math.pow(varianza, 0.5);
 
 		console.info("\n----------------------------------------------------");
-																	console.info("Sorteos: "+totalSorteos+" | Figura:"+idFigura
-			+ " | Max:"
-			+Math.max(...ganadoresAr) + " | Min:"+Math.min(...ganadoresAr)+" | Media: " +media
-			+ " - Desv. Std: " + desviacion);
+		console.info("Sorteos: " + totalSorteos + 
+			" | Cartones: " + cantidadCartones + 
+			" | Figura: " + idFigura + 
+			" | Min: "+Math.min(...ganadoresAr) + 
+			" | Max: " + Math.max(...ganadoresAr) + 
+			" | Media: " + media +
+			" | Desv Std: " + desviacion);
 		console.info("----------------------------------------------------");
 
 		let end = new Date() - start;
@@ -254,7 +261,7 @@ async function nuevaBalota(sorteo, order, numBalota) {
 	let ganadoresListlength = listaGanadores.length;
 	if ((listaGanadores) && (ganadoresListlength > 0)) {
 
-		// console.log("* * * hay ganadores !\n", listaGanadores);
+																console.log("* * * hay ganadores !\n", listaGanadores);
 		ganadoresAr.push(ganadoresListlength);
 
 		let gana = [];
